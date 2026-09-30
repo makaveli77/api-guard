@@ -1,0 +1,28 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use ApiGuard\Application\ComparisonService;
+use ApiGuard\CLI\ComparisonReportFormatter;
+use ApiGuard\Infrastructure\OpenApi\OpenApiFileLoader;
+use ApiGuard\Pro\Application\ProComparisonService;
+use ApiGuard\Pro\Console\CheckCommand;
+use ApiGuard\Pro\Ignore\IgnoreConfigurationLoader;
+use ApiGuard\Pro\Report\JsonReportFormatter;
+use ApiGuard\Pro\Report\MarkdownReportFormatter;
+use Symfony\Component\Console\Application;
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+$loader = new OpenApiFileLoader();
+$application = new Application('API Guard Pro');
+$application->addCommands([new CheckCommand(
+    new ProComparisonService($loader, new ComparisonService(), new IgnoreConfigurationLoader()),
+    new JsonReportFormatter(),
+    new MarkdownReportFormatter(),
+    new ComparisonReportFormatter(),
+)]);
+$application->setDefaultCommand('check', true);
+
+exit($application->run());

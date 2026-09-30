@@ -115,6 +115,18 @@ Register `ApiGuard\Symfony\ApiGuardBundle::class` in `config/bundles.php`. The b
 
 Symfony Console, DependencyInjection, and HttpKernel dependencies are isolated in the adapter package. The core retains its pre-existing standalone `symfony/yaml` parser component, but has no Symfony framework bundle or Console integration.
 
+## Pro Features
+
+Team-focused ignore policies and CI/review report formats are available in the separate Pro package:
+
+```bash
+composer require your-vendor/api-guard-pro
+vendor/bin/api-guard-pro --old=openapi-v1.yaml --new=openapi-v2.yaml --format=json
+vendor/bin/api-guard-pro --old=openapi-v1.yaml --new=openapi-v2.yaml --ignore-config=.api-guard-pro.yaml
+```
+
+Versioned ignore rules match exact change types and endpoint paths, require a reason, and keep suppressed changes visible in reports. The package provides text, JSON, and Markdown output. See [packages/api-guard-pro/README.md](api-guard-pro/README.md) for the configuration format and exit behavior.
+
 ## Comparison rules
 
 Breaking changes include removed paths or methods, removed parameters, newly required parameters or request bodies, request-property removal or newly required properties, incompatible schema type changes, removed enum values, removed request or response media types, removed response properties, response properties becoming optional, and removed response statuses.
@@ -129,7 +141,7 @@ The fixture-based comparison suite compares a production-style Commerce API in Y
 
 ## Development status
 
-Phases 1-8 are implemented: package foundation, OpenAPI loading and validation, structured compatibility comparison, CLI reporting, real-world regression coverage, GitHub Actions integration, and separate Laravel and Symfony adapters. Alternate report formats and Pro features remain future work.
+Phases 1-9 are implemented: package foundation, OpenAPI loading and validation, structured compatibility comparison, CLI reporting, real-world regression coverage, GitHub Actions integration, separate Laravel and Symfony adapters, and the initial Pro ignore/report package. HTML reports, history, notifications, consumer tracking, and advanced custom rules remain future work.
 
 Run the checks with:
 
