@@ -1,0 +1,33 @@
+name: API Guard
+description: Compare OpenAPI specifications and fail when breaking changes are detected.
+author: API Guard Contributors
+inputs:
+  old:
+    description: Path to the baseline OpenAPI specification, relative to the workspace or absolute.
+    required: true
+  new:
+    description: Path to the updated OpenAPI specification, relative to the workspace or absolute.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Set up PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        tools: composer:v2
+
+    - name: Install API Guard dependencies
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+      run: composer install --working-dir="$ACTION_PATH" --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
+
+    - name: Compare OpenAPI specifications
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        OLD_SPEC: ${{ inputs.old }}
+        NEW_SPEC: ${{ inputs.new }}
+      run: php "$ACTION_PATH/bin/api-guard" check --old="$OLD_SPEC" --new="$NEW_SPEC"

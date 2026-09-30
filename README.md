@@ -77,6 +77,20 @@ Exit codes are designed for scripts and CI:
 
 Use `vendor/bin/api-guard --help` to display command usage. JSON output, GitHub annotations, and framework integrations are not included in this phase.
 
+## GitHub Actions
+
+The repository provides a composite action that sets up PHP 8.2, installs API Guard's locked production dependencies, and invokes the existing CLI. Check out the API repository before using the action. The `old` and `new` inputs accept paths relative to `GITHUB_WORKSPACE` or absolute paths.
+
+```yaml
+- name: Check API compatibility
+    uses: makaveli77/api-guard@v1
+    with:
+        old: .api-guard-baseline/docs/openapi.yaml
+        new: docs/openapi.yaml
+```
+
+Exit code `1` makes the action fail when breaking changes are found. Invalid arguments or files, invalid specifications, and unexpected errors also fail with the CLI's corresponding exit codes. The full pull-request workflow checks out the exact base and head commits and is available at [docs/examples/api-guard.yml](api-guard/docs/examples/api-guard.yml).
+
 ## Comparison rules
 
 Breaking changes include removed paths or methods, removed parameters, newly required parameters or request bodies, request-property removal or newly required properties, incompatible schema type changes, removed enum values, removed request or response media types, removed response properties, response properties becoming optional, and removed response statuses.
@@ -91,7 +105,7 @@ The fixture-based comparison suite compares a production-style Commerce API in Y
 
 ## Development status
 
-Phases 1-4 are implemented: package foundation, OpenAPI loading and validation, structured compatibility comparison, and CLI reporting. GitHub Actions, alternate report formats, and framework integrations remain future work.
+Phases 1-6 are implemented: package foundation, OpenAPI loading and validation, structured compatibility comparison, CLI reporting, real-world regression coverage, and the GitHub Actions integration. Alternate report formats and framework integrations remain future work.
 
 Run the checks with:
 

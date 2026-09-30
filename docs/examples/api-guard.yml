@@ -1,0 +1,38 @@
+name: API compatibility
+
+'on':
+  pull_request:
+    paths:
+      - docs/openapi.yaml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: api-compatibility-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  api-guard:
+    name: Check OpenAPI compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out pull request specification
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Check out baseline specification
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: .api-guard-baseline
+          persist-credentials: false
+
+      - name: Check API compatibility
+        uses: makaveli77/api-guard@v1
+        with:
+          old: .api-guard-baseline/docs/openapi.yaml
+          new: docs/openapi.yaml
