@@ -75,7 +75,7 @@ Exit codes are designed for scripts and CI:
 | 3 | An input is not a valid OpenAPI 3.x specification |
 | 4 | Unexpected internal error |
 
-Use `vendor/bin/api-guard --help` to display command usage. JSON output, GitHub annotations, and framework integrations are not included in this phase.
+Use `vendor/bin/api-guard --help` to display command usage. JSON output and GitHub annotations are not included.
 
 ## GitHub Actions
 
@@ -91,6 +91,17 @@ The repository provides a composite action that sets up PHP 8.2, installs API Gu
 
 Exit code `1` makes the action fail when breaking changes are found. Invalid arguments or files, invalid specifications, and unexpected errors also fail with the CLI's corresponding exit codes. The full pull-request workflow checks out the exact base and head commits and is available at [docs/examples/api-guard.yml](api-guard/docs/examples/api-guard.yml).
 
+## Laravel Integration
+
+Laravel support is provided by a separate package, keeping Laravel dependencies out of the core:
+
+```bash
+composer require your-vendor/laravel-api-guard
+php artisan api:guard docs/openapi-v1.yaml docs/openapi-v2.yaml
+```
+
+Laravel package discovery registers the provider and command automatically. The command reuses the core loader, comparison service, and report formatter. See [packages/laravel-api-guard/README.md](api-guard/packages/laravel-api-guard/README.md) for supported Laravel versions and details.
+
 ## Comparison rules
 
 Breaking changes include removed paths or methods, removed parameters, newly required parameters or request bodies, request-property removal or newly required properties, incompatible schema type changes, removed enum values, removed request or response media types, removed response properties, response properties becoming optional, and removed response statuses.
@@ -105,7 +116,7 @@ The fixture-based comparison suite compares a production-style Commerce API in Y
 
 ## Development status
 
-Phases 1-6 are implemented: package foundation, OpenAPI loading and validation, structured compatibility comparison, CLI reporting, real-world regression coverage, and the GitHub Actions integration. Alternate report formats and framework integrations remain future work.
+Phases 1-7 are implemented: package foundation, OpenAPI loading and validation, structured compatibility comparison, CLI reporting, real-world regression coverage, GitHub Actions integration, and the separate Laravel adapter. Alternate report formats, Symfony integration, and Pro features remain future work.
 
 Run the checks with:
 

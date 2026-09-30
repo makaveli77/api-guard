@@ -1,0 +1,55 @@
+{
+    "name": "your-vendor/laravel-api-guard",
+    "description": "Laravel Artisan integration for API Guard OpenAPI compatibility checks.",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "illuminate/console": "^10.0|^11.0|^12.0",
+        "illuminate/support": "^10.0|^11.0|^12.0",
+        "your-vendor/api-guard": "^1.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^8.0|^9.0|^10.0",
+        "phpstan/phpstan": "^2.2",
+        "phpunit/phpunit": "^11.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "ApiGuard\\Laravel\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "ApiGuard\\Laravel\\Tests\\": "tests/"
+        }
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../..",
+            "options": {
+                "versions": {
+                    "your-vendor/api-guard": "1.0.0"
+                }
+            }
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [
+                "ApiGuard\\Laravel\\ApiGuardServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "analyse": "vendor/bin/phpstan analyse --memory-limit=1G",
+        "check": [
+            "@test",
+            "@analyse"
+        ]
+    }
+}
