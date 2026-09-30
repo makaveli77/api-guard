@@ -1,14 +1,15 @@
 # API Guard
 
-API Guard is a framework-independent PHP package for comparing OpenAPI specifications and identifying breaking API changes before they reach production.
+API Guard is a framework-independent PHP package for loading, validating, and preparing OpenAPI specifications for later comparison and compatibility checks.
 
 ## Features
 
 - Framework-independent PHP package
-- OpenAPI 3.x compatibility focus
-- CLI-first workflow
-- CI-friendly exit codes
-- Extensible comparison rules
+- OpenAPI 3.x YAML and JSON loading
+- Strict validation for malformed or unsupported specifications
+- Clean domain representation for future comparison phases
+- Minimal dependency footprint
+- PHPStan and PHPUnit configured for code quality
 
 ## Installation
 
@@ -16,15 +17,37 @@ API Guard is a framework-independent PHP package for comparing OpenAPI specifica
 composer require your-vendor/api-guard
 ```
 
+## Current status
+
+Phase 1 created the package foundation and Phase 2 adds the OpenAPI specification loader.
+
+The project currently supports:
+
+- loading valid OpenAPI 3.x YAML files
+- loading valid OpenAPI 3.x JSON files
+- rejecting invalid YAML/JSON
+- rejecting malformed or non-OpenAPI-3 documents
+- returning a clean domain model for future comparison work
+
+The actual breaking-change comparison engine and final CLI comparison workflow are intentionally not implemented yet and remain for later phases.
+
 ## Basic usage
 
-```bash
-vendor/bin/api-guard check --old=openapi-v1.yaml --new=openapi-v2.yaml
+```php
+use ApiGuard\Infrastructure\OpenApi\OpenApiFileLoader;
+
+$loader = new OpenApiFileLoader();
+$spec = $loader->load('openapi.yaml');
+
+var_dump($spec->version, $spec->title, $spec->paths);
 ```
 
-## Current Phase
+## Planned phases
 
-This repository is in the Phase 1 foundation stage. The package skeleton, Composer configuration, PHPUnit setup, and PHPStan configuration are in place. Actual comparison logic and CLI comparison features will be added in later phases.
+- Phase 1: package foundation and architecture
+- Phase 2: OpenAPI loading and validation
+- Phase 3: comparison engine and rule evaluation
+- Phase 4: CLI reporting and CI-friendly output
 
 ## License
 
