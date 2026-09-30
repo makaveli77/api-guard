@@ -35,7 +35,7 @@ final class FoundationTest extends TestCase
         $exitCode = $command->run(['api-guard', '--help']);
         $output = (string) ob_get_clean();
 
-        $this->assertSame(2, $exitCode);
+        $this->assertSame(0, $exitCode);
         $this->assertStringContainsString('Usage: vendor/bin/api-guard check', $output);
     }
 }

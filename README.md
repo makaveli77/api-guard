@@ -7,7 +7,8 @@ API Guard is a framework-independent PHP package for comparing OpenAPI specifica
 - Framework-independent PHP package
 - OpenAPI 3.x YAML and JSON loading
 - Strict validation for malformed or unsupported specifications
-- Structured breaking and non-breaking comparison results
+- Structured breaking, non-breaking, and informational comparison results
+- Human-readable CLI reports with predictable CI exit codes
 - Recursive comparison of inline object and array schemas
 - Minimal dependency footprint
 - PHPStan and PHPUnit configured for code quality
@@ -36,6 +37,46 @@ foreach ($changes as $change) {
 
 `ComparisonService::compare()` returns a list of immutable `Change` values. Each change includes a type, severity, affected endpoint path, and message. It does not print output or depend on a CLI framework.
 
+## CLI
+
+Compare two OpenAPI documents with:
+
+```bash
+vendor/bin/api-guard check --old=openapi-v1.yaml --new=openapi-v2.yaml
+```
+
+The command accepts YAML or JSON files and prints a deterministic summary followed by separate sections for breaking, non-breaking, and informational changes. For example:
+
+```text
+API Guard
+
+Comparing:
+    openapi-v1.yaml
+    openapi-v2.yaml
+
+Summary:
+    Breaking changes:     1
+    Non-breaking changes: 0
+    Informational changes: 0
+    Total changes:        1
+
+BREAKING CHANGES
+    ! /users [RESPONSE SCHEMA]
+        GET response 200 application/json property email was removed.
+```
+
+Exit codes are designed for scripts and CI:
+
+| Code | Meaning |
+| ---: | --- |
+| 0 | Comparison succeeded with no breaking changes |
+| 1 | Breaking changes were detected |
+| 2 | Invalid command arguments or input files |
+| 3 | An input is not a valid OpenAPI 3.x specification |
+| 4 | Unexpected internal error |
+
+Use `vendor/bin/api-guard --help` to display command usage. JSON output, GitHub annotations, and framework integrations are not included in this phase.
+
 ## Comparison rules
 
 Breaking changes include removed paths or methods, removed parameters, newly required parameters or request bodies, request-property removal or newly required properties, incompatible schema type changes, removed enum values, removed request or response media types, removed response properties, response properties becoming optional, and removed response statuses.
@@ -46,7 +87,7 @@ Comparisons recurse through inline object properties, array items, and inline `a
 
 ## Development status
 
-Phases 1-3 are implemented: package foundation, OpenAPI loading and validation, and structured compatibility comparison. CLI reporting and CI output are Phase 4 and are not part of the current comparison API.
+Phases 1-4 are implemented: package foundation, OpenAPI loading and validation, structured compatibility comparison, and CLI reporting. GitHub Actions, alternate report formats, and framework integrations remain future work.
 
 Run the checks with:
 
