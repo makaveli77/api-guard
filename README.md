@@ -9,7 +9,7 @@ API Guard is a framework-independent PHP package for comparing OpenAPI specifica
 - Strict validation for malformed or unsupported specifications
 - Structured breaking, non-breaking, and informational comparison results
 - Human-readable CLI reports with predictable CI exit codes
-- Recursive comparison of inline object and array schemas
+- Recursive comparison of nested and referenced object and array schemas
 - Minimal dependency footprint
 - PHPStan and PHPUnit configured for code quality
 
@@ -83,7 +83,11 @@ Breaking changes include removed paths or methods, removed parameters, newly req
 
 Non-breaking changes include added paths or methods, optional parameters and request properties, parameters, request bodies, or request properties becoming optional, added response properties, response statuses or media types, widened request enums, and operation summary or description edits. Adding a value to a response enum is breaking because clients may receive an unrecognized value. A required request property or required request body is breaking.
 
-Comparisons recurse through inline object properties, array items, and inline `additionalProperties` schemas. Component or external `$ref` resolution and composed schemas such as `oneOf`/`allOf` are not currently expanded.
+Comparisons recurse through inline object properties, array items, inline `additionalProperties` schemas, and local `#/components/schemas/...` references, including recursive references and escaped JSON Pointer names. External references and composed schemas such as `oneOf`, `anyOf`, and `allOf` are not currently expanded.
+
+## Real-world regression coverage
+
+The fixture-based comparison suite compares a production-style Commerce API in YAML and JSON. It covers multiple endpoints and methods; path, query, header, and cookie parameters; request and response bodies; referenced and recursive components; nested objects and arrays; nullable and required properties; enum changes; and multiple response statuses. Assertions include simultaneous breaking and non-breaking changes, malformed-input coverage, escaped reference names, repeated comparisons, and stable result ordering when path declarations are reordered.
 
 ## Development status
 

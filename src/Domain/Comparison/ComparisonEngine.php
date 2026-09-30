@@ -16,9 +16,11 @@ final class ComparisonEngine
     public function compare(OpenApiSpecification $oldVersion, OpenApiSpecification $newVersion): array
     {
         $changes = [];
+        $oldPaths = $this->resolvePathReferences($oldVersion->paths, $oldVersion->components);
+        $newPaths = $this->resolvePathReferences($newVersion->paths, $newVersion->components);
 
-        foreach ($oldVersion->paths as $path => $oldPathItem) {
-            $newPathItem = $newVersion->paths[$path] ?? null;
+        foreach ($oldPaths as $path => $oldPathItem) {
+            $newPathItem = $newPaths[$path] ?? null;
 
             if ($newPathItem === null) {
                 $changes[] = new Change(ChangeType::PATH, Severity::BREAKING, $path, 'Endpoint was removed.');
@@ -42,19 +44,36 @@ final class ComparisonEngine
             }
         }
 
-        foreach ($newVersion->paths as $path => $newPathItem) {
-            if (!array_key_exists($path, $oldVersion->paths)) {
+        foreach ($newPaths as $path => $newPathItem) {
+            if (!array_key_exists($path, $oldPaths)) {
                 $changes[] = new Change(ChangeType::PATH, Severity::NON_BREAKING, $path, 'Endpoint was added.');
                 continue;
             }
 
-            $oldPathItem = $oldVersion->paths[$path];
+            $oldPathItem = $oldPaths[$path];
             foreach (self::METHODS as $method) {
                 if (!is_array($oldPathItem[$method] ?? null) && is_array($newPathItem[$method] ?? null)) {
                     $changes[] = new Change(ChangeType::METHOD, Severity::NON_BREAKING, $path, strtoupper($method) . ' method was added.');
                 }
             }
         }
+
+        $severityOrder = [
+            Severity::BREAKING->value => 0,
+            Severity::NON_BREAKING->value => 1,
+            Severity::INFO->value => 2,
+        ];
+        usort($changes, static fn (Change $left, Change $right): int => [
+            $severityOrder[$left->severity->value],
+            $left->path,
+            $left->type->value,
+            $left->message,
+        ] <=> [
+            $severityOrder[$right->severity->value],
+            $right->path,
+            $right->type->value,
+            $right->message,
+        ]);
 
         return $changes;
     }
@@ -326,6 +345,20 @@ final class ComparisonEngine
             }
         }
 
+        $oldNullable = ($oldSchema['nullable'] ?? false) === true;
+        $newNullable = ($newSchema['nullable'] ?? false) === true;
+        if ($oldNullable !== $newNullable) {
+            $severity = $response
+                ? ($newNullable ? Severity::BREAKING : Severity::NON_BREAKING)
+                : ($newNullable ? Severity::NON_BREAKING : Severity::BREAKING);
+            $changes[] = new Change(
+                $changeType,
+                $severity,
+                $path,
+                $schemaLabel . ' changed nullable from ' . ($oldNullable ? 'true' : 'false') . ' to ' . ($newNullable ? 'true' : 'false') . '.'
+            );
+        }
+
         $oldProperties = is_array($oldSchema['properties'] ?? null) ? $oldSchema['properties'] : [];
         $newProperties = is_array($newSchema['properties'] ?? null) ? $newSchema['properties'] : [];
         $oldRequired = is_array($oldSchema['required'] ?? null) ? $oldSchema['required'] : [];
@@ -423,5 +456,80 @@ final class ComparisonEngine
         }
 
         return $map;
+    }
+
+    /**
+     * @param array<string, array<string, mixed>> $paths
+     * @param array<string, mixed> $components
+     * @return array<string, array<string, mixed>>
+     */
+    private function resolvePathReferences(array $paths, array $components): array
+    {
+        $resolvedPaths = [];
+        foreach ($paths as $path => $pathItem) {
+            $resolvedPathItem = $this->stringKeyedMap($this->resolveSchemaReferences($pathItem, $components));
+            if ($resolvedPathItem !== null) {
+                $resolvedPaths[$path] = $resolvedPathItem;
+            }
+        }
+
+        return $resolvedPaths;
+    }
+
+    /**
+     * @param array<string, mixed> $components
+     * @param list<string> $referenceStack
+     */
+    private function resolveSchemaReferences(mixed $value, array $components, array $referenceStack = []): mixed
+    {
+        if (!is_array($value)) {
+            return $value;
+        }
+
+        $reference = $value['$ref'] ?? null;
+        if (is_string($reference) && str_starts_with($reference, '#/components/schemas/')) {
+            if (in_array($reference, $referenceStack, true)) {
+                return $value;
+            }
+
+            $target = $this->resolveComponentSchema($reference, $components);
+            if ($target !== null) {
+                $siblings = $value;
+                unset($siblings['$ref']);
+                $referenceStack = [...$referenceStack, $reference];
+                $resolvedTarget = $this->resolveSchemaReferences($target, $components, $referenceStack);
+                if (is_array($resolvedTarget)) {
+                    $value = array_replace($resolvedTarget, $siblings);
+                }
+            }
+        }
+
+        foreach ($value as $key => $nestedValue) {
+            $value[$key] = $this->resolveSchemaReferences($nestedValue, $components, $referenceStack);
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param array<string, mixed> $components
+     * @return array<string, mixed>|null
+     */
+    private function resolveComponentSchema(string $reference, array $components): ?array
+    {
+        $tokens = explode('/', substr($reference, 2));
+        array_shift($tokens);
+        $value = $components;
+
+        foreach ($tokens as $token) {
+            $key = str_replace(['~1', '~0'], ['/', '~'], $token);
+            if (!array_key_exists($key, $value) || !is_array($value[$key])) {
+                return null;
+            }
+
+            $value = $value[$key];
+        }
+
+        return $this->stringKeyedMap($value);
     }
 }

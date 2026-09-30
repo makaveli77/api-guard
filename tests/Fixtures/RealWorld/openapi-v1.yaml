@@ -1,0 +1,182 @@
+openapi: 3.0.3
+info:
+  title: Commerce Platform API
+  version: 1.4.0
+servers:
+  - url: https://api.example.com/v1
+paths:
+  /users/{userId}:
+    get:
+      summary: Retrieve a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: include
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: X-Request-ID
+          in: header
+          required: false
+          schema:
+            type: string
+        - name: session
+          in: cookie
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+    post:
+      summary: Replace a user's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /orders:
+    get:
+      summary: List orders
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, paid, cancelled]
+      responses:
+        '200':
+          description: Orders returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '404':
+          description: No orders found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /orders/{orderId}:
+    delete:
+      summary: Cancel an order
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Order cancelled
+components:
+  schemas:
+    User:
+      type: object
+      required: [id, email, profile]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        profile:
+          $ref: '#/components/schemas/UserProfile'
+        tags:
+          type: array
+          items:
+            type: string
+    UserProfile:
+      type: object
+      properties:
+        displayName:
+          type: string
+        manager:
+          $ref: '#/components/schemas/User'
+        timezone:
+          type: string
+          nullable: true
+    UpdateUserRequest:
+      type: object
+      required: [name, email]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        preferences:
+          type: object
+          properties:
+            marketingEmails:
+              type: boolean
+              nullable: true
+        notificationChannels:
+          type: array
+          items:
+            type: string
+            enum: [email, sms, push]
+    Order:
+      type: object
+      required: [orderId, status, items]
+      properties:
+        orderId:
+          type: string
+        status:
+          type: string
+          enum: [pending, paid, cancelled]
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+    OrderItem:
+      type: object
+      required: [sku, quantity, unitPrice]
+      properties:
+        sku:
+          type: string
+        quantity:
+          type: integer
+        unitPrice:
+          type: number
+    ApiError:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string

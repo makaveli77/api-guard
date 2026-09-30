@@ -1,0 +1,163 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Commerce Platform API",
+    "version": "2.0.0"
+  },
+  "servers": [
+    { "url": "https://api.example.com/v2" }
+  ],
+  "paths": {
+    "/users/{userId}": {
+      "get": {
+        "summary": "Retrieve an account",
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "include", "in": "query", "required": true, "schema": { "type": "array", "items": { "type": "string" } } },
+          { "name": "X-Request-ID", "in": "header", "required": false, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "User returned",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/User" } }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Replace a user's profile",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/UpdateUserRequest" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User updated",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/User" } }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update selected user fields",
+        "responses": { "204": { "description": "User updated" } }
+      }
+    },
+    "/orders": {
+      "get": {
+        "summary": "List orders",
+        "parameters": [
+          { "name": "status", "in": "query", "required": false, "schema": { "type": "string", "enum": ["pending", "paid"] } },
+          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 100 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Orders returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Order" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": { "200": { "description": "Healthy" } }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "User": {
+        "type": "object",
+        "required": ["id", "profile"],
+        "properties": {
+          "id": { "type": "integer" },
+          "profile": { "$ref": "#/components/schemas/UserProfile" },
+          "nickname": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "UserProfile": {
+        "type": "object",
+        "properties": {
+          "displayName": { "type": "string" },
+          "manager": { "$ref": "#/components/schemas/User" },
+          "timezone": { "type": "string", "nullable": false },
+          "avatarUrl": { "type": "string", "format": "uri" }
+        }
+      },
+      "UpdateUserRequest": {
+        "type": "object",
+        "required": ["name", "email", "accountType"],
+        "properties": {
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "accountType": { "type": "string", "enum": ["standard", "premium"] },
+          "preferences": {
+            "type": "object",
+            "properties": {
+              "marketingEmails": { "type": "boolean", "nullable": false }
+            }
+          },
+          "notificationChannels": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["email", "push"] }
+          }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "required": ["orderId", "status", "items"],
+        "properties": {
+          "orderId": { "type": "string" },
+          "status": { "type": "string", "enum": ["pending", "paid"] },
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/OrderItem" }
+          }
+        }
+      },
+      "OrderItem": {
+        "type": "object",
+        "required": ["sku", "quantity", "unitPrice"],
+        "properties": {
+          "sku": { "type": "string" },
+          "quantity": { "type": "string" },
+          "unitPrice": { "type": "string" },
+          "discountCode": { "type": "string" }
+        }
+      },
+      "ApiError": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    }
+  }
+}
