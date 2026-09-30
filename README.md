@@ -102,6 +102,19 @@ php artisan api:guard docs/openapi-v1.yaml docs/openapi-v2.yaml
 
 Laravel package discovery registers the provider and command automatically. The command reuses the core loader, comparison service, and report formatter. See [packages/laravel-api-guard/README.md](api-guard/packages/laravel-api-guard/README.md) for supported Laravel versions and details.
 
+## Symfony Integration
+
+Symfony support is also provided as a separate package:
+
+```bash
+composer require your-vendor/symfony-api-guard
+php bin/console api-guard:check docs/openapi-v1.yaml docs/openapi-v2.yaml
+```
+
+Register `ApiGuard\Symfony\ApiGuardBundle::class` in `config/bundles.php`. The bundle wires the core loader, comparison service, report formatter, and Console command through Symfony's dependency injection container. See [packages/symfony-api-guard/README.md](api-guard/packages/symfony-api-guard/README.md) for full installation details.
+
+Symfony Console, DependencyInjection, and HttpKernel dependencies are isolated in the adapter package. The core retains its pre-existing standalone `symfony/yaml` parser component, but has no Symfony framework bundle or Console integration.
+
 ## Comparison rules
 
 Breaking changes include removed paths or methods, removed parameters, newly required parameters or request bodies, request-property removal or newly required properties, incompatible schema type changes, removed enum values, removed request or response media types, removed response properties, response properties becoming optional, and removed response statuses.
@@ -116,7 +129,7 @@ The fixture-based comparison suite compares a production-style Commerce API in Y
 
 ## Development status
 
-Phases 1-7 are implemented: package foundation, OpenAPI loading and validation, structured compatibility comparison, CLI reporting, real-world regression coverage, GitHub Actions integration, and the separate Laravel adapter. Alternate report formats, Symfony integration, and Pro features remain future work.
+Phases 1-8 are implemented: package foundation, OpenAPI loading and validation, structured compatibility comparison, CLI reporting, real-world regression coverage, GitHub Actions integration, and separate Laravel and Symfony adapters. Alternate report formats and Pro features remain future work.
 
 Run the checks with:
 
