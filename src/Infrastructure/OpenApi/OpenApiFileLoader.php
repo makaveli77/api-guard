@@ -11,6 +11,8 @@ use Symfony\Component\Yaml\Yaml;
 
 final class OpenApiFileLoader implements SpecificationLoaderInterface
 {
+    private const HTTP_METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'];
+
     public function load(string $path): OpenApiSpecification
     {
         if (trim($path) === '') {
@@ -113,6 +115,9 @@ final class OpenApiFileLoader implements SpecificationLoaderInterface
         if (!array_key_exists('info', $document) || !is_array($document['info'])) {
             throw new SpecificationLoadException(sprintf('OpenAPI specification %s is missing the required info object.', $path));
         }
+        if (!is_string($document['info']['title'] ?? null) || !is_string($document['info']['version'] ?? null)) {
+            throw new SpecificationLoadException(sprintf('OpenAPI specification %s info object must define string title and version values.', $path));
+        }
 
         if (!array_key_exists('paths', $document) || !is_array($document['paths'])) {
             throw new SpecificationLoadException(sprintf('OpenAPI specification %s is missing the required paths object.', $path));
@@ -121,6 +126,21 @@ final class OpenApiFileLoader implements SpecificationLoaderInterface
         foreach ($document['paths'] as $pathName => $pathItem) {
             if (!is_string($pathName) || !is_array($pathItem)) {
                 throw new SpecificationLoadException(sprintf('OpenAPI specification %s contains an invalid path entry.', $path));
+            }
+
+            foreach ($pathItem as $method => $operation) {
+                if (!is_string($method) || !in_array($method, self::HTTP_METHODS, true)) {
+                    continue;
+                }
+
+                if (!is_array($operation)) {
+                    throw new SpecificationLoadException(sprintf('OpenAPI specification %s contains an invalid %s operation at %s.', $path, strtoupper($method), $pathName));
+                }
+
+                $responses = $operation['responses'] ?? null;
+                if (!is_array($responses) || $responses === [] || array_is_list($responses)) {
+                    throw new SpecificationLoadException(sprintf('OpenAPI specification %s %s operation at %s must define a non-empty responses object.', $path, strtoupper($method), $pathName));
+                }
             }
         }
 

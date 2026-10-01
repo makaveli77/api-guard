@@ -315,15 +315,12 @@ final class ComparisonEngine
         string $propertyPath = '',
     ): void {
         $schemaLabel = $label . ($propertyPath === '' ? '' : ' property ' . $propertyPath);
-        $oldType = $oldSchema['type'] ?? null;
-        $newType = $newSchema['type'] ?? null;
-        if ($oldType !== $newType && (is_string($oldType) || is_string($newType))) {
-            $severity = Severity::BREAKING;
-            if (($response && $oldType === null) || (!$response && $newType === null)) {
-                $severity = Severity::NON_BREAKING;
-            }
-            $oldTypeLabel = is_string($oldType) ? $oldType : 'unconstrained';
-            $newTypeLabel = is_string($newType) ? $newType : 'unconstrained';
+        $oldTypes = $this->normalizeSchemaTypes($oldSchema['type'] ?? null);
+        $newTypes = $this->normalizeSchemaTypes($newSchema['type'] ?? null);
+        if ($oldTypes !== $newTypes && ($oldTypes !== null || $newTypes !== null)) {
+            $severity = $this->typeChangeSeverity($oldTypes, $newTypes, $response);
+            $oldTypeLabel = $oldTypes === null ? 'unconstrained' : implode('|', $oldTypes);
+            $newTypeLabel = $newTypes === null ? 'unconstrained' : implode('|', $newTypes);
             $changes[] = new Change($changeType, $severity, $path, $schemaLabel . ' changed type from ' . $oldTypeLabel . ' to ' . $newTypeLabel . '.');
         }
 
@@ -456,6 +453,49 @@ final class ComparisonEngine
         }
 
         return $map;
+    }
+
+    /**
+     * @return list<string>|null
+     */
+    private function normalizeSchemaTypes(mixed $type): ?array
+    {
+        if (is_string($type)) {
+            return [$type];
+        }
+        if (!is_array($type) || !array_is_list($type)) {
+            return null;
+        }
+        foreach ($type as $typeName) {
+            if (!is_string($typeName)) {
+                return null;
+            }
+        }
+
+        $types = array_values(array_unique($type));
+        sort($types, SORT_STRING);
+
+        return $types;
+    }
+
+    /**
+     * @param list<string>|null $oldTypes
+     * @param list<string>|null $newTypes
+     */
+    private function typeChangeSeverity(?array $oldTypes, ?array $newTypes, bool $response): Severity
+    {
+        if ($oldTypes === null) {
+            return $response ? Severity::NON_BREAKING : Severity::BREAKING;
+        }
+        if ($newTypes === null) {
+            return $response ? Severity::BREAKING : Severity::NON_BREAKING;
+        }
+
+        $incompatibleTypes = $response
+            ? array_diff($newTypes, $oldTypes)
+            : array_diff($oldTypes, $newTypes);
+
+        return $incompatibleTypes === [] ? Severity::NON_BREAKING : Severity::BREAKING;
     }
 
     /**

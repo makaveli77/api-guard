@@ -59,6 +59,41 @@ final class GitHubActionConfigurationTest extends TestCase
         self::assertSame('docs/openapi.yaml', $actionInputs['new'] ?? null);
     }
 
+    public function testRepositoryCiCoversAdvertisedPhpAndFrameworkVersions(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $workflow = $this->mapping(Yaml::parseFile($root . '/.github/workflows/ci.yml'));
+        $jobs = $this->mapping($workflow['jobs'] ?? null);
+
+        foreach (['core', 'pro'] as $jobName) {
+            $job = $this->mapping($jobs[$jobName] ?? null);
+            $strategy = $this->mapping($job['strategy'] ?? null);
+            $matrix = $this->mapping($strategy['matrix'] ?? null);
+            self::assertSame(['8.2', '8.3', '8.4', '8.5'], $matrix['php'] ?? null);
+        }
+
+        $proConsoleJob = $this->mapping($jobs['pro-console'] ?? null);
+        $proConsoleStrategy = $this->mapping($proConsoleJob['strategy'] ?? null);
+        $proConsoleMatrix = $this->mapping($proConsoleStrategy['matrix'] ?? null);
+        $proConsoleRows = $this->sequence($proConsoleMatrix['include'] ?? null);
+        $proConsoleVersions = array_map(fn (mixed $row): mixed => $this->mapping($row)['symfony'] ?? null, $proConsoleRows);
+        self::assertSame(['6.4', '7.0', '8.0'], $proConsoleVersions);
+
+        $laravelJob = $this->mapping($jobs['laravel'] ?? null);
+        $laravelStrategy = $this->mapping($laravelJob['strategy'] ?? null);
+        $laravelMatrix = $this->mapping($laravelStrategy['matrix'] ?? null);
+        $laravelRows = $this->sequence($laravelMatrix['include'] ?? null);
+        $laravelVersions = array_map(fn (mixed $row): mixed => $this->mapping($row)['laravel'] ?? null, $laravelRows);
+        self::assertSame(['10', '11', '12'], $laravelVersions);
+
+        $symfonyJob = $this->mapping($jobs['symfony'] ?? null);
+        $symfonyStrategy = $this->mapping($symfonyJob['strategy'] ?? null);
+        $symfonyMatrix = $this->mapping($symfonyStrategy['matrix'] ?? null);
+        $symfonyRows = $this->sequence($symfonyMatrix['include'] ?? null);
+        $symfonyVersions = array_map(fn (mixed $row): mixed => $this->mapping($row)['symfony'] ?? null, $symfonyRows);
+        self::assertSame(['6.4', '7.0', '8.0'], $symfonyVersions);
+    }
+
     /**
      * @return array<string, mixed>
      */

@@ -246,6 +246,33 @@ final class ComparisonEngineTest extends TestCase
         );
     }
 
+    public function testOpenApi31TypeUnionsUseRequestAndResponseCompatibilityDirections(): void
+    {
+        $nullableString = ['type' => 'object', 'properties' => ['value' => ['type' => ['string', 'null']]]];
+        $string = ['type' => 'object', 'properties' => ['value' => ['type' => 'string']]];
+
+        $this->assertSingleChange(
+            $this->compareOperationPair($this->responseOperation($nullableString), $this->responseOperation($string)),
+            ChangeType::RESPONSE_SCHEMA,
+            Severity::NON_BREAKING
+        );
+        $this->assertSingleChange(
+            $this->compareOperationPair($this->responseOperation($string), $this->responseOperation($nullableString)),
+            ChangeType::RESPONSE_SCHEMA,
+            Severity::BREAKING
+        );
+        $this->assertSingleChange(
+            $this->compareOperationPair($this->requestOperation($string), $this->requestOperation($nullableString)),
+            ChangeType::REQUEST_BODY,
+            Severity::NON_BREAKING
+        );
+        $this->assertSingleChange(
+            $this->compareOperationPair($this->requestOperation($nullableString), $this->requestOperation($string)),
+            ChangeType::REQUEST_BODY,
+            Severity::BREAKING
+        );
+    }
+
     public function testResponseEnumAndRequirednessRules(): void
     {
         $oldSchema = ['type' => 'object', 'properties' => [

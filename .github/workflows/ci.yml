@@ -1,0 +1,143 @@
+name: CI
+
+'on':
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core:
+    name: Core / PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4', '8.5']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer:v2
+      - run: composer validate --strict
+      - run: composer install --no-interaction --prefer-dist
+      - run: composer check
+
+  pro:
+    name: Pro / PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4', '8.5']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer:v2
+      - run: composer validate --strict
+        working-directory: packages/api-guard-pro
+      - run: composer install --no-interaction --prefer-dist
+        working-directory: packages/api-guard-pro
+      - run: composer check
+        working-directory: packages/api-guard-pro
+
+  pro-console:
+    name: Pro / Symfony Console ${{ matrix.symfony }} / PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - symfony: '6.4'
+            php: '8.2'
+          - symfony: '7.0'
+            php: '8.2'
+          - symfony: '8.0'
+            php: '8.4'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer:v2
+      - run: composer config platform.php "$(php -r 'echo PHP_VERSION;')"
+        working-directory: packages/api-guard-pro
+      - run: composer require --no-update "symfony/console:^${{ matrix.symfony }}"
+        working-directory: packages/api-guard-pro
+      - run: composer update --with-all-dependencies --no-interaction --prefer-dist
+        working-directory: packages/api-guard-pro
+      - run: composer validate --strict && composer check
+        working-directory: packages/api-guard-pro
+
+  laravel:
+    name: Laravel ${{ matrix.laravel }} / PHP 8.2
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - laravel: '10'
+            testbench: '^8.0'
+          - laravel: '11'
+            testbench: '^9.0'
+          - laravel: '12'
+            testbench: '^10.0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+      - run: composer require --dev --no-update "orchestra/testbench:${{ matrix.testbench }}"
+        working-directory: packages/laravel-api-guard
+      # Laravel 10/11 are advisory-blocked legacy test targets; this job has
+      # read-only permissions, publishes no artifacts, and never deploys them.
+      - if: matrix.laravel != '12'
+        run: composer update --with-all-dependencies --no-interaction --prefer-dist --no-security-blocking
+        working-directory: packages/laravel-api-guard
+      - if: matrix.laravel == '12'
+        run: composer update --with-all-dependencies --no-interaction --prefer-dist
+        working-directory: packages/laravel-api-guard
+      - run: composer validate --strict && composer check
+        working-directory: packages/laravel-api-guard
+
+  symfony:
+    name: Symfony ${{ matrix.symfony }} / PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - symfony: '6.4'
+            php: '8.2'
+          - symfony: '7.0'
+            php: '8.2'
+          - symfony: '8.0'
+            php: '8.4'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer:v2
+      - run: composer config platform.php "$(php -r 'echo PHP_VERSION;')"
+        working-directory: packages/symfony-api-guard
+      - run: >-
+          composer require --no-update
+          "symfony/config:^${{ matrix.symfony }}"
+          "symfony/console:^${{ matrix.symfony }}"
+          "symfony/dependency-injection:^${{ matrix.symfony }}"
+          "symfony/http-kernel:^${{ matrix.symfony }}"
+        working-directory: packages/symfony-api-guard
+      - run: composer update --with-all-dependencies --no-interaction --prefer-dist
+        working-directory: packages/symfony-api-guard
+      - run: composer validate --strict && composer check
+        working-directory: packages/symfony-api-guard

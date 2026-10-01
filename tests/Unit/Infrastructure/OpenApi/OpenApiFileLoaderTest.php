@@ -60,6 +60,25 @@ final class OpenApiFileLoaderTest extends TestCase
         $this->loader->load(__DIR__ . '/../../../Fixtures/OpenApi/invalid-structure.yaml');
     }
 
+    public function testItRejectsOperationsWithoutResponses(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'api-guard-missing-responses-');
+        self::assertNotFalse($path);
+        file_put_contents($path, json_encode([
+            'openapi' => '3.1.0',
+            'info' => ['title' => 'Malformed API', 'version' => '1.0.0'],
+            'paths' => ['/broken' => ['get' => []]],
+        ], JSON_THROW_ON_ERROR));
+
+        try {
+            $this->expectException(SpecificationLoadException::class);
+            $this->expectExceptionMessage('must define a non-empty responses object');
+            $this->loader->load($path);
+        } finally {
+            unlink($path);
+        }
+    }
+
     public function testItRejectsNonOpenApi3Document(): void
     {
         $this->expectException(SpecificationLoadException::class);

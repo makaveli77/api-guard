@@ -39,6 +39,11 @@
     ],
     "minimum-stability": "stable",
     "prefer-stable": true,
+    "config": {
+        "platform": {
+            "php": "8.2.0"
+        }
+    },
     "scripts": {
         "test": "vendor/bin/phpunit",
         "analyse": "vendor/bin/phpstan analyse --memory-limit=1G",

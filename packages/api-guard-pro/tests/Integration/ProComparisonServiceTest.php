@@ -49,7 +49,7 @@ YAML);
 
     public function testPolicyCanSuppressTheOnlyBreakingChange(): void
     {
-        $oldPath = $this->writeSpecification(['/legacy' => ['get' => ['responses' => []]]]);
+        $oldPath = $this->writeSpecification(['/legacy' => ['get' => ['responses' => ['200' => ['description' => 'OK']]]]]);
         $newPath = $this->writeSpecification([]);
         $configPath = $this->writeConfiguration(<<<'YAML'
 version: 1

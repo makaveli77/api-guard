@@ -51,6 +51,28 @@ final class ReportFormattersTest extends TestCase
         self::assertStringContainsString('Reason: Existing consumer migration.', $report);
     }
 
+    public function testMarkdownEscapesSpecificationMessagesAndIgnoreReasons(): void
+    {
+        $result = new ProComparisonResult(
+            [new Change(
+                ChangeType::UNKNOWN,
+                Severity::INFO,
+                '/users',
+                '<img src=x onerror=alert(1)> [click](https://example.test)'
+            )],
+            [new IgnoredChange(
+                new Change(ChangeType::PATH, Severity::BREAKING, '/legacy', 'Endpoint removed.'),
+                '<script>alert(1)</script>'
+            )]
+        );
+
+        $report = (new MarkdownReportFormatter())->format('old.yaml', 'new.yaml', $result);
+
+        self::assertStringContainsString('\\<img src=x onerror=alert\\(1\\)\\>', $report);
+        self::assertStringContainsString('\\[click\\]\\(https://example.test\\)', $report);
+        self::assertStringContainsString('Reason: \\<script\\>alert\\(1\\)\\</script\\>', $report);
+    }
+
     private function comparisonResult(): ProComparisonResult
     {
         return new ProComparisonResult(

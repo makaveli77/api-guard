@@ -40,7 +40,12 @@ final class CompareOpenApiCommandTest extends TestCase
         $new = $this->fixturePath('RealWorld/openapi-v2.json');
         $output = new BufferedOutput();
 
-        $exitCode = $this->application()->make(Kernel::class)->call('api:guard', ['old' => $old, 'new' => $new], $output);
+        $kernel = $this->application()->make(Kernel::class);
+        if (!$kernel instanceof Kernel) {
+            throw new RuntimeException('The Laravel console kernel is not registered.');
+        }
+
+        $exitCode = $kernel->call('api:guard', ['old' => $old, 'new' => $new], $output);
         $report = $output->fetch();
 
         self::assertSame(CompareOpenApiCommand::EXIT_BREAKING_CHANGES, $exitCode);

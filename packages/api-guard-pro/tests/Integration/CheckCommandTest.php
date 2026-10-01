@@ -61,7 +61,7 @@ final class CheckCommandTest extends TestCase
 
     public function testMarkdownFormatIncludesIgnoredChangeReasonAndCanPassCi(): void
     {
-        $old = $this->writeSpecification(['/legacy' => ['get' => ['responses' => []]]]);
+        $old = $this->writeSpecification(['/legacy' => ['get' => ['responses' => ['200' => ['description' => 'OK']]]]]);
         $new = $this->writeSpecification([]);
         $config = $this->writeConfiguration(<<<'YAML'
 version: 1

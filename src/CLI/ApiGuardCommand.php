@@ -14,13 +14,13 @@ use Throwable;
 
 final class ApiGuardCommand
 {
-    public const string NAME = 'api-guard';
+    public const NAME = 'api-guard';
 
-    public const int EXIT_SUCCESS = 0;
-    public const int EXIT_BREAKING_CHANGES = 1;
-    public const int EXIT_INVALID_INPUT = 2;
-    public const int EXIT_INVALID_SPECIFICATION = 3;
-    public const int EXIT_UNEXPECTED_ERROR = 4;
+    public const EXIT_SUCCESS = 0;
+    public const EXIT_BREAKING_CHANGES = 1;
+    public const EXIT_INVALID_INPUT = 2;
+    public const EXIT_INVALID_SPECIFICATION = 3;
+    public const EXIT_UNEXPECTED_ERROR = 4;
 
     private readonly SpecificationLoaderInterface $loader;
 

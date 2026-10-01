@@ -16,8 +16,8 @@ final class MarkdownReportFormatter
         $lines = [
             '# API Guard Pro',
             '',
-            sprintf('- Baseline: `%s`', $this->escapeInline($oldPath)),
-            sprintf('- Updated: `%s`', $this->escapeInline($newPath)),
+            sprintf('- Baseline: `%s`', $this->escapeMarkdown($oldPath)),
+            sprintf('- Updated: `%s`', $this->escapeMarkdown($newPath)),
             sprintf('- Breaking changes: %d', $this->countSeverity($result->changes, Severity::BREAKING)),
             sprintf('- Non-breaking changes: %d', $this->countSeverity($result->changes, Severity::NON_BREAKING)),
             sprintf('- Informational changes: %d', $this->countSeverity($result->changes, Severity::INFO)),
@@ -73,9 +73,9 @@ final class MarkdownReportFormatter
     {
         return sprintf(
             '- `%s` (%s): %s',
-            $this->escapeInline($change->path),
+            $this->escapeMarkdown($change->path),
             $change->type->value,
-            $change->message
+            $this->escapeMarkdown($change->message)
         );
     }
 
@@ -83,15 +83,22 @@ final class MarkdownReportFormatter
     {
         return sprintf(
             "- `%s` (%s): %s\n  Reason: %s",
-            $this->escapeInline($ignoredChange->change->path),
+            $this->escapeMarkdown($ignoredChange->change->path),
             $ignoredChange->change->type->value,
-            $ignoredChange->change->message,
-            $ignoredChange->reason
+            $this->escapeMarkdown($ignoredChange->change->message),
+            $this->escapeMarkdown($ignoredChange->reason)
         );
     }
 
-    private function escapeInline(string $value): string
+    private function escapeMarkdown(string $value): string
     {
-        return str_replace(['\\', '`'], ['\\\\', '\\`'], $value);
+        $value = str_replace(["\r", "\n", "\t"], ' ', $value);
+        $specialCharacters = ['\\', '`', '*', '_', '[', ']', '(', ')', '#', '!', '|', '<', '>', '&'];
+
+        return str_replace(
+            $specialCharacters,
+            array_map(static fn (string $character): string => '\\' . $character, $specialCharacters),
+            $value
+        );
     }
 }
