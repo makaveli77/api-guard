@@ -79,6 +79,62 @@ final class OpenApiFileLoaderTest extends TestCase
         }
     }
 
+    public function testItAcceptsOpenApi30And31ResponseObjectsAndReferences(): void
+    {
+        foreach (['3.0.3', '3.1.0'] as $version) {
+            $specification = $this->loadDocument([
+                'openapi' => $version,
+                'info' => ['title' => 'Response API', 'version' => '1.0.0'],
+                'paths' => ['/users' => ['get' => ['responses' => [
+                    '200' => [
+                        'description' => 'Users returned',
+                        'headers' => ['X-Request-ID' => ['description' => 'Request identifier', 'schema' => ['type' => 'string']]],
+                        'content' => ['application/json' => ['schema' => ['type' => 'array', 'items' => ['type' => 'string']]]],
+                        'links' => ['next' => ['operationId' => 'listNextPage']],
+                    ],
+                    '404' => [
+                        '$ref' => '#/components/responses/NotFound',
+                        'summary' => 'Missing resource',
+                        'description' => 'Reference Object siblings are preserved.',
+                    ],
+                ]]]],
+            ]);
+
+            self::assertSame($version, $specification->version);
+            self::assertArrayHasKey('/users', $specification->paths);
+        }
+    }
+
+    public function testItRejectsMalformedResponseEntriesAndFields(): void
+    {
+        $invalidResponses = [
+            ['200' => null],
+            ['200' => 'OK'],
+            ['200' => []],
+            ['200' => ['description' => 200]],
+            ['200' => ['$ref' => '  ']],
+            ['200' => ['description' => 'OK', 'content' => null]],
+            ['200' => ['description' => 'OK', 'content' => ['application/json' => null]]],
+            ['200' => ['description' => 'OK', 'headers' => ['X-Request-ID' => null]]],
+            ['200' => ['description' => 'OK', 'links' => ['next' => null]]],
+        ];
+
+        foreach ($invalidResponses as $responses) {
+            try {
+                $this->loadDocument([
+                    'openapi' => '3.1.0',
+                    'info' => ['title' => 'Malformed response API', 'version' => '1.0.0'],
+                    'paths' => ['/users' => ['get' => ['responses' => $responses]]],
+                ]);
+            } catch (SpecificationLoadException $exception) {
+                self::assertStringContainsString('response', strtolower($exception->getMessage()));
+                continue;
+            }
+
+            self::fail('Expected malformed response entry to be rejected.');
+        }
+    }
+
     public function testItRejectsNonOpenApi3Document(): void
     {
         $this->expectException(SpecificationLoadException::class);
@@ -122,6 +178,24 @@ final class OpenApiFileLoaderTest extends TestCase
             $this->expectExceptionMessage('is empty');
 
             $this->loader->load($path);
+        } finally {
+            unlink($path);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $document
+     */
+    private function loadDocument(array $document): \ApiGuard\Domain\Specification\OpenApiSpecification
+    {
+        $path = tempnam(sys_get_temp_dir(), 'api-guard-response-spec-');
+        if ($path === false) {
+            self::fail('Unable to create a temporary OpenAPI specification.');
+        }
+
+        file_put_contents($path, json_encode($document, JSON_THROW_ON_ERROR));
+        try {
+            return $this->loader->load($path);
         } finally {
             unlink($path);
         }

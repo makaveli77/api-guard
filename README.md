@@ -79,14 +79,14 @@ Use `vendor/bin/api-guard --help` to display command usage. JSON output and GitH
 
 ## GitHub Actions
 
-The repository provides a composite action that sets up PHP 8.2, installs API Guard's locked production dependencies, and invokes the existing CLI. Check out the API repository before using the action. The `old` and `new` inputs accept paths relative to `GITHUB_WORKSPACE` or absolute paths.
+The repository provides a composite action that sets up PHP 8.2, installs API Guard's locked production dependencies, and invokes the existing CLI. Check out the API repository before using the action. The `old` and `new` inputs accept paths relative to `GITHUB_WORKSPACE` or absolute paths. The example step below uses the same inputs declared in `action.yml`.
 
 ```yaml
 - name: Check API compatibility
-    uses: makaveli77/api-guard@v1
-    with:
-        old: .api-guard-baseline/docs/openapi.yaml
-        new: docs/openapi.yaml
+  uses: makaveli77/api-guard@v1
+  with:
+    old: .api-guard-baseline/docs/openapi.yaml
+    new: docs/openapi.yaml
 ```
 
 Exit code `1` makes the action fail when breaking changes are found. Invalid arguments or files, invalid specifications, and unexpected errors also fail with the CLI's corresponding exit codes. The full pull-request workflow checks out the exact base and head commits and is available at [docs/examples/api-guard.yml](api-guard/docs/examples/api-guard.yml).

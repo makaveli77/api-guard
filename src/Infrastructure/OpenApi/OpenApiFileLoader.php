@@ -141,9 +141,65 @@ final class OpenApiFileLoader implements SpecificationLoaderInterface
                 if (!is_array($responses) || $responses === [] || array_is_list($responses)) {
                     throw new SpecificationLoadException(sprintf('OpenAPI specification %s %s operation at %s must define a non-empty responses object.', $path, strtoupper($method), $pathName));
                 }
+
+                foreach ($responses as $status => $response) {
+                    $this->validateResponseEntry($response, $path, $pathName, $method, (string) $status);
+                }
             }
         }
 
         return $document;
+    }
+
+    private function validateResponseEntry(mixed $response, string $specificationPath, string $pathName, string $method, string $status): void
+    {
+        $label = sprintf('%s %s operation at %s response %s', strtoupper($method), $specificationPath, $pathName, $status);
+
+        $response = $this->mapping($response);
+        if ($response === null) {
+            throw new SpecificationLoadException(sprintf('OpenAPI specification %s contains an invalid response object at %s.', $specificationPath, $label));
+        }
+
+        if (array_key_exists('$ref', $response)) {
+            if (!is_string($response['$ref']) || trim($response['$ref']) === '') {
+                throw new SpecificationLoadException(sprintf('OpenAPI specification %s contains an invalid response reference at %s.', $specificationPath, $label));
+            }
+
+            return;
+        }
+
+        if (!is_string($response['description'] ?? null)) {
+            throw new SpecificationLoadException(sprintf('OpenAPI specification %s response object at %s must define a string description.', $specificationPath, $label));
+        }
+
+        foreach (['headers', 'content', 'links'] as $field) {
+            if (!array_key_exists($field, $response)) {
+                continue;
+            }
+
+            $entries = $response[$field];
+            $entries = $this->mapping($entries);
+            if ($entries === null) {
+                throw new SpecificationLoadException(sprintf('OpenAPI specification %s response %s field "%s" must be an object.', $specificationPath, $label, $field));
+            }
+
+            foreach ($entries as $name => $entry) {
+                if (!is_string($name) || $this->mapping($entry) === null) {
+                    throw new SpecificationLoadException(sprintf('OpenAPI specification %s response %s field "%s" contains an invalid object entry.', $specificationPath, $label, $field));
+                }
+            }
+        }
+    }
+
+    /**
+     * @return array<mixed>|null
+     */
+    private function mapping(mixed $value): ?array
+    {
+        if (!is_array($value) || ($value !== [] && array_is_list($value))) {
+            return null;
+        }
+
+        return $value;
     }
 }

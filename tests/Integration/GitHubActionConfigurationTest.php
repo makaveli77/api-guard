@@ -59,6 +59,37 @@ final class GitHubActionConfigurationTest extends TestCase
         self::assertSame('docs/openapi.yaml', $actionInputs['new'] ?? null);
     }
 
+    public function testReadmeActionSnippetParsesAndMatchesPublishedActionInputs(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $readme = file_get_contents($root . '/README.md');
+        if ($readme === false) {
+            self::fail('Unable to read README.md.');
+        }
+        $matchCount = preg_match('/## GitHub Actions.*?```yaml\s*(.*?)```/s', $readme, $matches);
+        if ($matchCount !== 1 || !isset($matches[1])) {
+            self::fail('README GitHub Actions YAML example was not found.');
+        }
+
+        $readmeSteps = $this->sequence(Yaml::parse($matches[1]));
+        $readmeStep = $this->mapping($readmeSteps[0] ?? null);
+        $readmeInputs = $this->mapping($readmeStep['with'] ?? null);
+        $action = $this->mapping(Yaml::parseFile($root . '/action.yml'));
+        $actionInputs = $this->mapping($action['inputs'] ?? null);
+        $example = $this->mapping(Yaml::parseFile($root . '/docs/examples/api-guard.yml'));
+        $exampleJobs = $this->mapping($example['jobs'] ?? null);
+        $exampleJob = $this->mapping($exampleJobs['api-guard'] ?? null);
+        $exampleSteps = $this->sequence($exampleJob['steps'] ?? null);
+        $exampleActionStep = $this->mapping($exampleSteps[2] ?? null);
+        $exampleInputs = $this->mapping($exampleActionStep['with'] ?? null);
+
+        self::assertSame($exampleActionStep['uses'] ?? null, $readmeStep['uses'] ?? null);
+        foreach (['old', 'new'] as $inputName) {
+            self::assertTrue($this->mapping($actionInputs[$inputName] ?? null)['required'] ?? false);
+            self::assertSame($exampleInputs[$inputName] ?? null, $readmeInputs[$inputName] ?? null);
+        }
+    }
+
     public function testRepositoryCiCoversAdvertisedPhpAndFrameworkVersions(): void
     {
         $root = dirname(__DIR__, 2);
