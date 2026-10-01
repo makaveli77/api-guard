@@ -1,5 +1,5 @@
 {
-    "name": "your-vendor/symfony-api-guard",
+    "name": "ahdev/symfony-api-guard",
     "description": "Symfony Console and bundle integration for API Guard OpenAPI compatibility checks.",
     "type": "library",
     "license": "MIT",
@@ -9,7 +9,7 @@
         "symfony/console": "^6.4|^7.0|^8.0",
         "symfony/dependency-injection": "^6.4|^7.0|^8.0",
         "symfony/http-kernel": "^6.4|^7.0|^8.0",
-        "your-vendor/api-guard": "^1.0"
+        "ahdev/api-guard": "^1.0"
     },
     "require-dev": {
         "phpstan/phpstan": "^2.2",
@@ -31,7 +31,7 @@
             "url": "../..",
             "options": {
                 "versions": {
-                    "your-vendor/api-guard": "1.0.0"
+                    "ahdev/api-guard": "1.0.0"
                 }
             }
         }

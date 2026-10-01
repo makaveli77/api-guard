@@ -130,10 +130,10 @@ Avoid unnecessary dependencies.
 The intended Composer package name is:
 
 ```text
-your-vendor/api-guard
+ahdev/api-guard
 ```
 
-Do not hard-code a personal vendor name until the repository owner is known.
+The selected Composer vendor name is `ahdev`.
 
 The package should expose:
 
@@ -502,7 +502,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: API Guard
-        uses: your-vendor/api-guard-action@v1
+        uses: makaveli77/api-guard@v1
         with:
           old: openapi-old.yaml
           new: openapi.yaml
@@ -521,7 +521,7 @@ Do NOT build Laravel integration into the core package.
 Later, create a separate package:
 
 ```text
-your-vendor/laravel-api-guard
+ahdev/laravel-api-guard
 ```
 
 Potential command:
@@ -539,7 +539,7 @@ This package should depend on the core API Guard package.
 Later, create:
 
 ```text
-your-vendor/symfony-api-guard
+ahdev/symfony-api-guard
 ```
 
 Potential command:
@@ -776,7 +776,7 @@ API Guard should be:
 A developer should be able to go from:
 
 ```bash
-composer require your-vendor/api-guard
+composer require ahdev/api-guard
 ```
 
 to:

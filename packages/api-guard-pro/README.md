@@ -1,11 +1,13 @@
 # API Guard Pro
 
-API Guard Pro is a separate package for team-oriented ignore policies and machine-readable or review-friendly reports. It composes the core specification loader and comparison service; comparison rules remain in API Guard core.
+API Guard Pro is a proprietary, commercial package for team-oriented ignore policies and machine-readable or review-friendly reports. A valid commercial license from the copyright holder is required to install, access, or use API Guard Pro. The [API Guard Core package](../../README.md) remains free and MIT licensed.
+
+The commercial license, payment, and distribution process is not automated yet. No license server, activation, key, or online verification system is included. See the package [LICENSE](LICENSE) for the current terms.
 
 ## Installation
 
 ```bash
-composer require your-vendor/api-guard-pro
+composer require ahdev/api-guard-pro
 ```
 
 ## Usage

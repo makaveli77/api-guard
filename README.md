@@ -16,7 +16,7 @@ API Guard is a framework-independent PHP package for comparing OpenAPI specifica
 ## Installation
 
 ```bash
-composer require your-vendor/api-guard
+composer require ahdev/api-guard
 ```
 
 ## Basic usage
@@ -96,7 +96,7 @@ Exit code `1` makes the action fail when breaking changes are found. Invalid arg
 Laravel support is provided by a separate package, keeping Laravel dependencies out of the core:
 
 ```bash
-composer require your-vendor/laravel-api-guard
+composer require ahdev/laravel-api-guard
 php artisan api:guard docs/openapi-v1.yaml docs/openapi-v2.yaml
 ```
 
@@ -107,7 +107,7 @@ Laravel package discovery registers the provider and command automatically. The 
 Symfony support is also provided as a separate package:
 
 ```bash
-composer require your-vendor/symfony-api-guard
+composer require ahdev/symfony-api-guard
 php bin/console api-guard:check docs/openapi-v1.yaml docs/openapi-v2.yaml
 ```
 
@@ -117,10 +117,10 @@ Symfony Console, DependencyInjection, and HttpKernel dependencies are isolated i
 
 ## Pro Features
 
-Team-focused ignore policies and CI/review report formats are available in the separate Pro package:
+API Guard Pro is a separate proprietary, commercial package. A valid commercial license is required for its use; commercial licensing, payment, and distribution are not automated yet. The Core package remains free and MIT licensed.
 
 ```bash
-composer require your-vendor/api-guard-pro
+composer require ahdev/api-guard-pro
 vendor/bin/api-guard-pro --old=openapi-v1.yaml --new=openapi-v2.yaml --format=json
 vendor/bin/api-guard-pro --old=openapi-v1.yaml --new=openapi-v2.yaml --ignore-config=.api-guard-pro.yaml
 ```

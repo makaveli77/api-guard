@@ -1,6 +1,6 @@
 # Laravel API Guard
 
-Laravel API Guard is a separate Artisan adapter for the framework-independent `your-vendor/api-guard` package. It reuses the core specification loader, comparison service, and report formatter; comparison rules remain in the core package.
+Laravel API Guard is a separate Artisan adapter for the framework-independent `ahdev/api-guard` package. It reuses the core specification loader, comparison service, and report formatter; comparison rules remain in the core package.
 
 ## Requirements
 
@@ -10,7 +10,7 @@ Laravel API Guard is a separate Artisan adapter for the framework-independent `y
 ## Installation
 
 ```bash
-composer require your-vendor/laravel-api-guard
+composer require ahdev/laravel-api-guard
 ```
 
 Laravel package discovery registers the service provider and command automatically. If package discovery is disabled, add `ApiGuard\Laravel\ApiGuardServiceProvider::class` to the application's providers list.

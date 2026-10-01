@@ -10,7 +10,7 @@ Symfony API Guard is a separate bundle for running API Guard comparisons through
 ## Installation
 
 ```bash
-composer require your-vendor/symfony-api-guard
+composer require ahdev/symfony-api-guard
 ```
 
 Register the bundle in `config/bundles.php`:

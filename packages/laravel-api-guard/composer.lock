@@ -4,8 +4,63 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "fb5f849c36a55905740cd9247c254e85",
+    "content-hash": "ad8286eaf8a00df35fa8b2a9417383b6",
     "packages": [
+        {
+            "name": "ahdev/api-guard",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "../..",
+                "reference": "8ece28caed576285a94ad24aa4ddbbe5366043a0"
+            },
+            "require": {
+                "php": "^8.2",
+                "symfony/yaml": "^6.4|^7.4"
+            },
+            "require-dev": {
+                "phpstan/phpstan": "^2.2",
+                "phpunit/phpunit": "^11.5"
+            },
+            "bin": [
+                "bin/api-guard"
+            ],
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "ApiGuard\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "ApiGuard\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "vendor/bin/phpunit"
+                ],
+                "analyse": [
+                    "vendor/bin/phpstan analyse --memory-limit=1G"
+                ],
+                "check": [
+                    "@test",
+                    "@analyse"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "API Guard Contributors"
+                }
+            ],
+            "description": "Framework-independent PHP package for comparing OpenAPI specifications and reporting breaking changes.",
+            "transport-options": {
+                "relative": true
+            }
+        },
         {
             "name": "brick/math",
             "version": "0.14.8",
@@ -5899,61 +5954,6 @@
                 }
             ],
             "time": "2026-04-26T05:33:54+00:00"
-        },
-        {
-            "name": "your-vendor/api-guard",
-            "version": "1.0.0",
-            "dist": {
-                "type": "path",
-                "url": "../..",
-                "reference": "8815eb47684dd179271581f7e882e78927bd15b2"
-            },
-            "require": {
-                "php": "^8.2",
-                "symfony/yaml": "^6.4|^7.4"
-            },
-            "require-dev": {
-                "phpstan/phpstan": "^2.2",
-                "phpunit/phpunit": "^11.5"
-            },
-            "bin": [
-                "bin/api-guard"
-            ],
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "ApiGuard\\": "src/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "ApiGuard\\Tests\\": "tests/"
-                }
-            },
-            "scripts": {
-                "test": [
-                    "vendor/bin/phpunit"
-                ],
-                "analyse": [
-                    "vendor/bin/phpstan analyse --memory-limit=1G"
-                ],
-                "check": [
-                    "@test",
-                    "@analyse"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "API Guard Contributors"
-                }
-            ],
-            "description": "Framework-independent PHP package for comparing OpenAPI specifications and reporting breaking changes.",
-            "transport-options": {
-                "relative": true
-            }
         }
     ],
     "packages-dev": [

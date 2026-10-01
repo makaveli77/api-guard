@@ -1,5 +1,5 @@
 {
-    "name": "your-vendor/api-guard",
+    "name": "ahdev/api-guard",
     "description": "Framework-independent PHP package for comparing OpenAPI specifications and reporting breaking changes.",
     "type": "library",
     "license": "MIT",

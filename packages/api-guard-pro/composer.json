@@ -1,13 +1,13 @@
 {
-    "name": "your-vendor/api-guard-pro",
+    "name": "ahdev/api-guard-pro",
     "description": "Advanced policies and CI report formats for API Guard.",
     "type": "library",
-    "license": "MIT",
+    "license": "proprietary",
     "require": {
         "php": "^8.2",
         "symfony/console": "^6.4|^7.0|^8.0",
         "symfony/yaml": "^7.4",
-        "your-vendor/api-guard": "^1.0"
+        "ahdev/api-guard": "^1.0"
     },
     "require-dev": {
         "phpstan/phpstan": "^2.2",
@@ -32,7 +32,7 @@
             "url": "../..",
             "options": {
                 "versions": {
-                    "your-vendor/api-guard": "1.0.0"
+                    "ahdev/api-guard": "1.0.0"
                 }
             }
         }
