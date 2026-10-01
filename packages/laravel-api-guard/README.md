@@ -23,4 +23,4 @@ php artisan api:guard docs/openapi-v1.yaml docs/openapi-v2.yaml
 
 Paths are resolved from the application's current working directory. YAML and JSON are supported. A breaking comparison returns exit code `1`; invalid command input returns `2`, invalid OpenAPI documents return `3`, and unexpected errors return `4`. A comparison without breaking changes returns `0`.
 
-The package does not add Laravel dependencies to the core API Guard package. See the [core package documentation](../../README.md) for comparison rules and report details.
+The package does not add Laravel dependencies to the core API Guard package. See the [core package documentation](https://github.com/makaveli77/api-guard/blob/main/README.md) for comparison rules and report details.

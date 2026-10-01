@@ -98,6 +98,8 @@ jobs:
           tools: composer:v2
       - run: composer require --dev --no-update "orchestra/testbench:${{ matrix.testbench }}"
         working-directory: packages/laravel-api-guard
+      - run: composer config repositories.core '{"type":"path","url":"../..","options":{"versions":{"ahdev/api-guard":"1.0.0"}}}'
+        working-directory: packages/laravel-api-guard
       # Laravel 10/11 are advisory-blocked legacy test targets; this job has
       # read-only permissions, publishes no artifacts, and never deploys them.
       - if: matrix.laravel != '12'
@@ -136,6 +138,8 @@ jobs:
           "symfony/console:^${{ matrix.symfony }}"
           "symfony/dependency-injection:^${{ matrix.symfony }}"
           "symfony/http-kernel:^${{ matrix.symfony }}"
+        working-directory: packages/symfony-api-guard
+      - run: composer config repositories.core '{"type":"path","url":"../..","options":{"versions":{"ahdev/api-guard":"1.0.0"}}}'
         working-directory: packages/symfony-api-guard
       - run: composer update --with-all-dependencies --no-interaction --prefer-dist
         working-directory: packages/symfony-api-guard

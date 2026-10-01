@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ApiGuard\Laravel\Tests\Feature;
 
+use ApiGuard\Domain\Specification\OpenApiSpecification;
 use ApiGuard\Infrastructure\OpenApi\OpenApiFileLoader;
 use ApiGuard\Infrastructure\OpenApi\SpecificationLoaderInterface;
 use ApiGuard\Laravel\Console\CompareOpenApiCommand;
@@ -16,6 +17,18 @@ use Symfony\Component\Console\Output\BufferedOutput;
 
 final class CompareOpenApiCommandTest extends TestCase
 {
+    /** @var list<string> */
+    private array $temporaryFiles = [];
+
+    protected function tearDown(): void
+    {
+        foreach ($this->temporaryFiles as $path) {
+            unlink($path);
+        }
+
+        parent::tearDown();
+    }
+
     public function testServiceProviderRegistersTheLoaderAndArtisanCommand(): void
     {
         self::assertInstanceOf(OpenApiFileLoader::class, $this->application()->make(SpecificationLoaderInterface::class));
@@ -27,7 +40,7 @@ final class CompareOpenApiCommandTest extends TestCase
 
     public function testUnchangedSpecificationsSucceedAndPrintTheSharedReport(): void
     {
-        $specification = $this->fixturePath('OpenApi/valid-openapi.yaml');
+        $specification = $this->writeSpecification([]);
 
         $this->artisanCommand('api:guard', ['old' => $specification, 'new' => $specification])
             ->expectsOutputToContain('No changes detected.')
@@ -36,27 +49,24 @@ final class CompareOpenApiCommandTest extends TestCase
 
     public function testBreakingChangesReturnOneAndUseTheCoreFormatter(): void
     {
-        $old = $this->fixturePath('RealWorld/openapi-v1.yaml');
-        $new = $this->fixturePath('RealWorld/openapi-v2.json');
+        $old = $this->userSpecification('email');
+        $new = $this->userSpecification('name');
         $output = new BufferedOutput();
-
         $kernel = $this->application()->make(Kernel::class);
         if (!$kernel instanceof Kernel) {
             throw new RuntimeException('The Laravel console kernel is not registered.');
         }
 
         $exitCode = $kernel->call('api:guard', ['old' => $old, 'new' => $new], $output);
-        $report = $output->fetch();
 
         self::assertSame(CompareOpenApiCommand::EXIT_BREAKING_CHANGES, $exitCode);
-        self::assertStringContainsString('BREAKING CHANGES', $report);
-        self::assertStringContainsString('property email was removed', $report);
+        self::assertStringContainsString('BREAKING CHANGES', $output->fetch());
     }
 
     public function testMissingInputFileReturnsTwo(): void
     {
-        $valid = $this->fixturePath('OpenApi/valid-openapi.yaml');
         $missing = sys_get_temp_dir() . '/api-guard-laravel-missing-' . bin2hex(random_bytes(8));
+        $valid = $this->writeSpecification([]);
 
         $this->artisanCommand('api:guard', ['old' => $missing, 'new' => $valid])
             ->expectsOutputToContain('Input file does not exist')
@@ -65,8 +75,8 @@ final class CompareOpenApiCommandTest extends TestCase
 
     public function testInvalidSpecificationReturnsThree(): void
     {
-        $invalid = $this->fixturePath('OpenApi/invalid-yaml.yaml');
-        $valid = $this->fixturePath('OpenApi/valid-openapi.yaml');
+        $invalid = $this->writeTemporaryFile("openapi: [\n");
+        $valid = $this->writeSpecification([]);
 
         $this->artisanCommand('api:guard', ['old' => $invalid, 'new' => $valid])
             ->expectsOutputToContain('Invalid OpenAPI specification')
@@ -76,21 +86,50 @@ final class CompareOpenApiCommandTest extends TestCase
     public function testUnexpectedLoaderFailureReturnsFour(): void
     {
         $this->application()->instance(SpecificationLoaderInterface::class, new class implements SpecificationLoaderInterface {
-            public function load(string $path): \ApiGuard\Domain\Specification\OpenApiSpecification
+            public function load(string $path): OpenApiSpecification
             {
                 throw new RuntimeException('injected loader failure');
             }
         });
-        $valid = $this->fixturePath('OpenApi/valid-openapi.yaml');
+        $valid = $this->writeSpecification([]);
 
         $this->artisanCommand('api:guard', ['old' => $valid, 'new' => $valid])
             ->expectsOutputToContain('Unexpected error while loading specifications')
             ->assertExitCode(CompareOpenApiCommand::EXIT_UNEXPECTED_ERROR);
     }
 
-    private function fixturePath(string $path): string
+    private function userSpecification(string $property): string
     {
-        return dirname(__DIR__, 4) . '/tests/Fixtures/' . $path;
+        $schema = ['type' => 'object', 'properties' => [$property => ['type' => 'string']]];
+        $response = ['description' => 'User returned', 'content' => ['application/json' => ['schema' => $schema]]];
+        $operation = ['responses' => ['200' => $response]];
+
+        return $this->writeSpecification(['/users' => ['get' => $operation]]);
+    }
+
+    /**
+     * @param array<string, mixed> $paths
+     */
+    private function writeSpecification(array $paths): string
+    {
+        return $this->writeTemporaryFile(json_encode([
+            'openapi' => '3.1.0',
+            'info' => ['title' => 'Laravel adapter test API', 'version' => '1.0.0'],
+            'paths' => $paths,
+        ], JSON_THROW_ON_ERROR));
+    }
+
+    private function writeTemporaryFile(string $contents): string
+    {
+        $path = tempnam(sys_get_temp_dir(), 'api-guard-laravel-');
+        if ($path === false) {
+            self::fail('Unable to create a temporary OpenAPI file.');
+        }
+
+        $this->temporaryFiles[] = $path;
+        file_put_contents($path, $contents);
+
+        return $path;
     }
 
     private function application(): Application

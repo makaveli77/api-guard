@@ -6,21 +6,32 @@ namespace ApiGuard\Symfony\Tests\Integration;
 
 use ApiGuard\Application\ComparisonService;
 use ApiGuard\CLI\ComparisonReportFormatter;
-use ApiGuard\Domain\Comparison\Severity;
+use ApiGuard\Domain\Specification\OpenApiSpecification;
 use ApiGuard\Infrastructure\OpenApi\OpenApiFileLoader;
 use ApiGuard\Infrastructure\OpenApi\SpecificationLoaderInterface;
-use ApiGuard\Domain\Specification\OpenApiSpecification;
 use ApiGuard\Symfony\ApiGuardBundle;
 use ApiGuard\Symfony\Console\CompareOpenApiCommand;
 use ApiGuard\Symfony\DependencyInjection\ApiGuardExtension;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use RuntimeException;
 
 final class CompareOpenApiCommandTest extends TestCase
 {
+    /** @var list<string> */
+    private array $temporaryFiles = [];
+
+    protected function tearDown(): void
+    {
+        foreach ($this->temporaryFiles as $path) {
+            unlink($path);
+        }
+
+        parent::tearDown();
+    }
+
     public function testBundleExtensionRegistersCoreServicesAndConsoleCommand(): void
     {
         $container = new ContainerBuilder();
@@ -39,7 +50,7 @@ final class CompareOpenApiCommandTest extends TestCase
 
     public function testUnchangedSpecificationsReturnSuccessAndUseTheCoreReport(): void
     {
-        $fixture = $this->fixturePath('OpenApi/valid-openapi.json');
+        $fixture = $this->writeSpecification([]);
         $result = $this->runCommand($fixture, $fixture);
 
         self::assertSame(CompareOpenApiCommand::EXIT_SUCCESS, $result['exitCode']);
@@ -48,10 +59,7 @@ final class CompareOpenApiCommandTest extends TestCase
 
     public function testBreakingChangesReturnOneAndUseTheCoreFormatter(): void
     {
-        $result = $this->runCommand(
-            $this->fixturePath('RealWorld/openapi-v1.yaml'),
-            $this->fixturePath('RealWorld/openapi-v2.json')
-        );
+        $result = $this->runCommand($this->userSpecification('email'), $this->userSpecification('name'));
 
         self::assertSame(CompareOpenApiCommand::EXIT_BREAKING_CHANGES, $result['exitCode']);
         self::assertStringContainsString('BREAKING CHANGES', $result['display']);
@@ -72,7 +80,7 @@ final class CompareOpenApiCommandTest extends TestCase
     public function testMissingFileReturnsTwo(): void
     {
         $missing = sys_get_temp_dir() . '/api-guard-symfony-missing-' . bin2hex(random_bytes(8));
-        $result = $this->runCommand($missing, $this->fixturePath('OpenApi/valid-openapi.yaml'));
+        $result = $this->runCommand($missing, $this->writeSpecification([]));
 
         self::assertSame(CompareOpenApiCommand::EXIT_INVALID_INPUT, $result['exitCode']);
         self::assertStringContainsString('Input file does not exist', $result['display']);
@@ -80,10 +88,7 @@ final class CompareOpenApiCommandTest extends TestCase
 
     public function testInvalidSpecificationReturnsThree(): void
     {
-        $result = $this->runCommand(
-            $this->fixturePath('OpenApi/invalid-yaml.yaml'),
-            $this->fixturePath('OpenApi/valid-openapi.yaml')
-        );
+        $result = $this->runCommand($this->writeTemporaryFile("openapi: [\n"), $this->writeSpecification([]));
 
         self::assertSame(CompareOpenApiCommand::EXIT_INVALID_SPECIFICATION, $result['exitCode']);
         self::assertStringContainsString('Invalid OpenAPI specification', $result['display']);
@@ -97,7 +102,7 @@ final class CompareOpenApiCommandTest extends TestCase
                 throw new RuntimeException('injected loader failure');
             }
         };
-        $valid = $this->fixturePath('OpenApi/valid-openapi.yaml');
+        $valid = $this->writeSpecification([]);
         $result = $this->runCommand($valid, $valid, $loader);
 
         self::assertSame(CompareOpenApiCommand::EXIT_UNEXPECTED_ERROR, $result['exitCode']);
@@ -109,19 +114,20 @@ final class CompareOpenApiCommandTest extends TestCase
      */
     private function writeSpecification(array $paths): string
     {
-        $path = tempnam(sys_get_temp_dir(), 'api-guard-symfony-');
-        if ($path === false) {
-            self::fail('Unable to create a temporary OpenAPI specification.');
-        }
-
-        $document = [
+        return $this->writeTemporaryFile(json_encode([
             'openapi' => '3.1.0',
-            'info' => ['title' => 'Symfony test API', 'version' => '1.0.0'],
+            'info' => ['title' => 'Symfony adapter test API', 'version' => '1.0.0'],
             'paths' => $paths,
-        ];
-        file_put_contents($path, json_encode($document, JSON_THROW_ON_ERROR));
+        ], JSON_THROW_ON_ERROR));
+    }
 
-        return $path;
+    private function userSpecification(string $property): string
+    {
+        $schema = ['type' => 'object', 'properties' => [$property => ['type' => 'string']]];
+        $response = ['description' => 'User returned', 'content' => ['application/json' => ['schema' => $schema]]];
+        $operation = ['responses' => ['200' => $response]];
+
+        return $this->writeSpecification(['/users' => ['get' => $operation]]);
     }
 
     /**
@@ -131,8 +137,7 @@ final class CompareOpenApiCommandTest extends TestCase
         string $oldPath,
         string $newPath,
         ?SpecificationLoaderInterface $loader = null,
-    ): array
-    {
+    ): array {
         $application = new Application();
         $application->addCommands([new CompareOpenApiCommand(
             $loader ?? new OpenApiFileLoader(),
@@ -145,8 +150,16 @@ final class CompareOpenApiCommandTest extends TestCase
         return ['exitCode' => $exitCode, 'display' => $commandTester->getDisplay()];
     }
 
-    private function fixturePath(string $path): string
+    private function writeTemporaryFile(string $contents): string
     {
-        return dirname(__DIR__, 4) . '/tests/Fixtures/' . $path;
+        $path = tempnam(sys_get_temp_dir(), 'api-guard-symfony-');
+        if ($path === false) {
+            self::fail('Unable to create a temporary OpenAPI file.');
+        }
+
+        $this->temporaryFiles[] = $path;
+        file_put_contents($path, $contents);
+
+        return $path;
     }
 }

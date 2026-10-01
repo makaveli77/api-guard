@@ -4,3 +4,5 @@ vendor/
 coverage/
 *.log
 .DS_Store
+packages/laravel-api-guard/composer.lock
+packages/symfony-api-guard/composer.lock

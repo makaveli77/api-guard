@@ -115,6 +115,12 @@ Register `ApiGuard\Symfony\ApiGuardBundle::class` in `config/bundles.php`. The b
 
 Symfony Console, DependencyInjection, and HttpKernel dependencies are isolated in the adapter package. The core retains its pre-existing standalone `symfony/yaml` parser component, but has no Symfony framework bundle or Console integration.
 
+## Monorepo and Package Releases
+
+This repository is the development monorepo. Core is published from the repository root; Laravel and Symfony adapter packages are exported from `packages/` into standalone Git repositories by the release-only subtree workflow. Pro remains separate and is not published by that workflow.
+
+The adapter manifests require Core `^1.0`, so the first compatible release tag is `v1.0.0`. Before release, maintainers must create `ahdev/laravel-api-guard` and `ahdev/symfony-api-guard`, register the three public packages with Packagist, and configure the workflow's `PACKAGE_SPLIT_TOKEN` secret with contents write access limited to the two adapter repositories. See [docs/PACKAGE_DISTRIBUTION.md](api-guard/docs/PACKAGE_DISTRIBUTION.md) for the release steps and workflow details.
+
 ## Pro Features
 
 API Guard Pro is a separate proprietary, commercial package. A valid commercial license is required for its use; commercial licensing, payment, and distribution are not automated yet. The Core package remains free and MIT licensed.

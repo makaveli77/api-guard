@@ -25,17 +25,6 @@
             "ApiGuard\\Symfony\\Tests\\": "tests/"
         }
     },
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../..",
-            "options": {
-                "versions": {
-                    "ahdev/api-guard": "1.0.0"
-                }
-            }
-        }
-    ],
     "minimum-stability": "stable",
     "prefer-stable": true,
     "config": {

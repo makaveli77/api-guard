@@ -1,0 +1,115 @@
+name: Publish adapter packages
+
+'on':
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-adapters-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  split-and-publish:
+    name: Publish ${{ matrix.repository }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package_path: packages/laravel-api-guard
+            repository: ahdev/laravel-api-guard
+          - package_path: packages/symfony-api-guard
+            repository: ahdev/symfony-api-guard
+    steps:
+      - name: Check out release history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate compatible release tag
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v1\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Adapter dependencies require ahdev/api-guard ^1.0; expected a stable v1.x.y release tag, received '$RELEASE_TAG'."
+            exit 1
+          fi
+          if ! git rev-parse "$RELEASE_TAG^{commit}" >/dev/null 2>&1; then
+            echo "::error::Release tag '$RELEASE_TAG' is not present in the checked-out history."
+            exit 1
+          fi
+
+      - name: Split package history
+        id: split
+        shell: bash
+        env:
+          PACKAGE_PATH: ${{ matrix.package_path }}
+          DESTINATION_REPOSITORY: ${{ matrix.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          if ! split_commit="$(git subtree split --prefix="$PACKAGE_PATH" "$RELEASE_TAG")"; then
+            echo "::error::Unable to split '$PACKAGE_PATH' from '$RELEASE_TAG'."
+            exit 1
+          fi
+          if [[ -z "$split_commit" ]] || ! git cat-file -e "$split_commit^{commit}"; then
+            echo "::error::Package split did not produce a valid commit."
+            exit 1
+          fi
+          for required_file in composer.json README.md LICENSE; do
+            if ! git cat-file -e "$split_commit:$required_file" 2>/dev/null; then
+              echo "::error::Exported package '$PACKAGE_PATH' is missing '$required_file'."
+              exit 1
+            fi
+          done
+          package_name="$(git show "$split_commit:composer.json" | php -r '$manifest = json_decode(stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR); echo $manifest["name"] ?? "";')"
+          if [[ "$package_name" != "$DESTINATION_REPOSITORY" ]]; then
+            echo "::error::Package name '$package_name' does not match destination '$DESTINATION_REPOSITORY'."
+            exit 1
+          fi
+          echo "commit=$split_commit" >> "$GITHUB_OUTPUT"
+
+      - name: Push standalone package and release tag
+        shell: bash
+        env:
+          DESTINATION_REPOSITORY: ${{ matrix.repository }}
+          SPLIT_COMMIT: ${{ steps.split.outputs.commit }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          PACKAGE_SPLIT_TOKEN: ${{ secrets.PACKAGE_SPLIT_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${PACKAGE_SPLIT_TOKEN:-}" ]]; then
+            echo "::error::The PACKAGE_SPLIT_TOKEN secret is required."
+            exit 1
+          fi
+
+          askpass="$RUNNER_TEMP/package-split-askpass.sh"
+          cat > "$askpass" <<'ASKPASS'
+          #!/usr/bin/env sh
+          case "$1" in
+            *Username*) printf '%s\n' 'x-access-token' ;;
+            *Password*) printf '%s\n' "$PACKAGE_SPLIT_TOKEN" ;;
+            *) exit 1 ;;
+          esac
+          ASKPASS
+          chmod 700 "$askpass"
+          export GIT_ASKPASS="$askpass"
+          export GIT_TERMINAL_PROMPT=0
+
+          destination="https://github.com/${DESTINATION_REPOSITORY}.git"
+          if ! git ls-remote "$destination" >/dev/null 2>&1; then
+            echo "::error::Cannot access destination '$DESTINATION_REPOSITORY'. Create the repository and grant PACKAGE_SPLIT_TOKEN contents:write access."
+            exit 1
+          fi
+
+          if ! git push --atomic "$destination" \
+            "$SPLIT_COMMIT:refs/heads/main" \
+            "$SPLIT_COMMIT:refs/tags/$RELEASE_TAG"; then
+            echo "::error::Failed to publish '$DESTINATION_REPOSITORY' at '$RELEASE_TAG'."
+            exit 1
+          fi
